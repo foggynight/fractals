@@ -110,7 +110,7 @@
   (apply #'sdl2:set-render-draw-color (cons ren color)))
 
 ;; Fill the screen with the background color.
-(defun render-clear (ren)
+(defun render-draw-background (ren)
   (render-set-color ren *background-color*)
   (sdl2:render-clear ren))
 
@@ -132,6 +132,7 @@
                            :h *screen-height*
                            :flags '(:resizable :shown))
       (sdl2:with-renderer (ren win :flags '(:accelerated))
+        (render-draw-background ren)
         (sdl2:with-event-loop (:method :poll)
           (:keydown
            (:keysym key)
@@ -139,6 +140,5 @@
              (sdl2:push-event :quit)))
           (:idle
            ()
-           (render-clear ren)
            (sdl2:render-present ren))
           (:quit () t))))))
