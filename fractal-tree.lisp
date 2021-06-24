@@ -105,13 +105,16 @@
 
 ;;; RENDER SECTION -------------------------------------------------------------
 
+;; Set the draw color of the renderer.
 (defun render-set-color (ren color)
   (apply #'sdl2:set-render-draw-color (cons ren color)))
 
+;; Fill the screen with the background color.
 (defun render-clear (ren)
   (render-set-color ren *background-color*)
   (sdl2:render-clear ren))
 
+;; Draw a branch in the branch color, starting and ending at the given points.
 (defun render-draw-branch (ren start-point end-point)
   (render-set-color ren *branch-color*)
   (sdl2:render-draw-line ren
