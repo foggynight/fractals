@@ -35,6 +35,15 @@
 (defparameter *screen-width* 1280)
 (defparameter *screen-height* 720)
 
+;; Target frames per second to render
+(defparameter *target-fps* 144)
+;; Time to sleep between frames in milliseconds
+(defparameter *frame-delay-ms* (round (/ 1000 *target-fps*)))
+;; Time between updates in milliseconds
+(defparameter *update-delay-ms* 1000)
+;; Number of frames between updates
+(defparameter *update-delay-frame-count* (round (/ *update-delay-ms* *frame-delay-ms*)))
+
 ;; Center points of the screen
 (defparameter *center-x* (floor (/ *screen-width* 2)))
 (defparameter *center-y* (floor (/ *screen-height* 2)))
@@ -44,64 +53,66 @@
 (defparameter *branch-color* '(255 0 0 255))
 
 ;; Angle between a pair of split branches in radians
-(defparameter *split-angle* (/ pi 4))
+(defparameter *split-angle* (/ pi 3))
 ;; Number of branches to split each point into
 (defparameter *split-count* 2)
 ;; Length of each branch -- Distance between start and end point
 (defparameter *branch-length* 100)
+;; Factor by which to shrink the branches per iteration
+(defparameter *branch-shrink-factor* 0.8)
 
-;;; VEC2 SECTION ---------------------------------------------------------------
+;;; TREE-POINT SECTION ---------------------------------------------------------
 
-;; Perform vector addition on two x-y vectors, creating a new vector.
-(defun vec2-add (v0 v1)
-  `(,(+ (car v0) (car v1)) ,(+ (cadr v0) (cadr v1))))
+(defclass tree-point ()
+  ((x :accessor x
+      :initarg :x)
+   (y :accessor y
+      :initarg :y)
+   (ancestor-count :accessor ancestor-count
+                   :initarg :ancestor-count)
+   (parent-angle :accessor parent-angle
+                 :initarg :parent-angle)))
 
-;; Perform vector subtraction on two x-y vectors, creating a new vector.
-(defun vec2-sub (v0 v1)
-  `(,(- (car v0) (car v1)) ,(- (cadr v0) (cadr v1))))
+(defun split-first-point (start-point)
+  (let ((point-list nil)
+        (point nil)
+        (angle 0)
+        (delta-angle (/ (* 2 pi) *split-count*)))
+    (dotimes (i *split-count*)
+      (setq point (make-instance 'tree-point
+                                 :x (+ (x start-point)
+                                       (* *branch-length*
+                                          (cos angle)))
+                                 :y (+ (y start-point)
+                                       (* *branch-length*
+                                          (sin angle)))
+                                 :ancestor-count 1
+                                 :parent-angle angle))
+      (setq angle (+ angle delta-angle))
+      (setq point-list (cons point point-list)))
+    point-list))
 
-;; Perform scalar multiplication on an x-y vector, creating a new vector.
-(defun vec2-mul (v c)
-  `(,(* (car v) c) ,(* (cadr v) c)))
-
-;; Perform scalar division on an x-y vector, creating a new vector.
-(defun vec2-div (v c)
-  `(,(/ (car v) c) ,(/ (cadr v) c)))
-
-;; Check if two x-y vectors are equal.
-(defun vec2-eq (v0 v1)
-  (and (= (car v0)
-          (car v1))
-       (= (cadr v0)
-          (cadr v1))))
-
-;; Determine the length of an x-y vector.
-(defun vec2-length (v)
-  (sqrt (+ (expt (car v) 2) (expt (cadr v) 2))))
-
-;; Convert an x-y vector into an angle in radians relative to the positive
-;; x-axis with a positive rotation.
-(defun vec2-to-angle (v)
-  (let ((x (car v))
-        (y (cadr v))
-        (angle 0))
-    (if (= x 0)
-        (cond ((> y 0) (setq angle 90))
-              ((< y 0) (setq angle 270))
-              (t (setq angle 0)))
-        (progn (setq angle (atan (/ y x)))
-               ;; Adjust angle for correct quadrant
-               (cond ((< x 0) (setq angle (+ angle 180)))
-                     ((< y 0) (setq angle (+ angle 360))))))
-    angle))
-
-;;; TREE SECTION ---------------------------------------------------------------
-
-(defun split-point (last-point start-point)
-  )
-
-(defun split-first-point (first-point)
-  )
+(defun split-point (start-point)
+  (let ((point-list nil)
+        (point nil)
+        (angle (- (parent-angle start-point)
+                  (/ *split-angle* 2)))
+        (delta-angle (/ *split-angle* (1- *split-count*))))
+    (dotimes (i *split-count*)
+      (setq point (make-instance 'tree-point
+                                 :x (+ (x start-point)
+                                       (* *branch-length*
+                                          (expt *branch-shrink-factor* (ancestor-count start-point))
+                                          (cos angle)))
+                                 :y (+ (y start-point)
+                                       (* *branch-length*
+                                          (expt *branch-shrink-factor* (ancestor-count start-point))
+                                          (sin angle)))
+                                 :ancestor-count (1+ (ancestor-count start-point))
+                                 :parent-angle angle))
+      (setq angle (+ angle delta-angle))
+      (setq point-list (cons point point-list)))
+    point-list))
 
 ;;; RENDER SECTION -------------------------------------------------------------
 
@@ -114,31 +125,56 @@
   (render-set-color ren *background-color*)
   (sdl2:render-clear ren))
 
-;; Draw a branch in the branch color, starting and ending at the given points.
+;; Draw a branch in the branch color using a line thats starts and ends at the
+;; given points.
 (defun render-draw-branch (ren start-point end-point)
   (render-set-color ren *branch-color*)
   (sdl2:render-draw-line ren
-                         (floor (+ (car start-point) *center-x*))
-                         (floor (+ (cadr start-point) *center-y*))
-                         (floor (+ (car end-point) *center-x*))
-                         (floor (+ (cadr end-point) *center-y*))))
+                         (floor (+ (x start-point) *center-x*))
+                         (floor (+ (y start-point) *center-y*))
+                         (floor (+ (x end-point) *center-x*))
+                         (floor (+ (y end-point) *center-y*))))
+
+;; Draw a list of branches using a starting point and list of end points.
+(defun render-draw-branch-list (ren start-point end-point-list)
+  (dolist (end-point end-point-list)
+    (render-draw-branch ren start-point end-point)))
 
 ;;; MAIN SECTION ---------------------------------------------------------------
 
 (defun main ()
-  (sdl2:with-init (:everything)
-    (sdl2:with-window (win :title "Fractal Tree"
-                           :w *screen-width*
-                           :h *screen-height*
-                           :flags '(:resizable :shown))
-      (sdl2:with-renderer (ren win :flags '(:accelerated))
-        (render-draw-background ren)
-        (sdl2:with-event-loop (:method :poll)
-          (:keydown
-           (:keysym key)
-           (when (sdl2:scancode= (sdl2:scancode-value key) :scancode-escape)
-             (sdl2:push-event :quit)))
-          (:idle
-           ()
-           (sdl2:render-present ren))
-          (:quit () t))))))
+  (let* ((start-point (make-instance 'tree-point
+                                     :x 0 :y 0
+                                     :ancestor-count 0
+                                     :parent-angle 0))
+         (point-list (split-first-point start-point))
+         (next-point-list nil)
+         (frame-count 0))
+    (sdl2:with-init (:everything)
+      (sdl2:with-window (win :title "Fractal Tree"
+                             :w *screen-width*
+                             :h *screen-height*
+                             :flags '(:shown))
+        (sdl2:with-renderer (ren win :flags '(:accelerated))
+          (render-draw-background ren)
+          (render-draw-branch-list ren start-point point-list)
+          (sdl2:render-present ren)
+          (sdl2:with-event-loop (:method :poll)
+            (:keydown
+             (:keysym key)
+             (when (sdl2:scancode= (sdl2:scancode-value key) :scancode-escape)
+               (sdl2:push-event :quit)))
+            (:idle
+             ()
+             (unless (< frame-count *update-delay-frame-count*)
+               (setq frame-count 0)
+               (dolist (point point-list)
+                 (let ((split-point-list (split-point point)))
+                   (render-draw-branch-list ren point split-point-list)
+                   (setq next-point-list (concatenate 'list next-point-list split-point-list))))
+               (sdl2:render-present ren)
+               (setq point-list next-point-list)
+               (setq next-point-list nil))
+             (incf frame-count)
+             (sdl2:delay *frame-delay-ms*))
+            (:quit () t)))))))
