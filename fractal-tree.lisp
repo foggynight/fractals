@@ -63,6 +63,9 @@
 
 ;;; TREE-POINT SECTION ---------------------------------------------------------
 
+;; Tree-point class representing a point in the tree, each point has a parent
+;; point and some number of child points; branches are lines drawn between a
+;; parent and child point.
 (defclass tree-point ()
   ((x :accessor x
       :initarg :x)
@@ -73,6 +76,7 @@
    (parent-angle :accessor parent-angle
                  :initarg :parent-angle)))
 
+;; Split the root point into its child points.
 (defun split-root-point (start-point)
   (let ((point-list nil)
         (point nil)
@@ -92,6 +96,7 @@
       (setq point-list (cons point point-list)))
     point-list))
 
+;; Split a child point into its child points.
 (defun split-point (start-point)
   (let ((point-list nil)
         (point nil)
