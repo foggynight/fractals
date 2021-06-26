@@ -73,7 +73,7 @@
    (parent-angle :accessor parent-angle
                  :initarg :parent-angle)))
 
-(defun split-first-point (start-point)
+(defun split-root-point (start-point)
   (let ((point-list nil)
         (point nil)
         (angle 0)
@@ -147,7 +147,7 @@
                                      :x 0 :y 0
                                      :ancestor-count 0
                                      :parent-angle 0))
-         (point-list (split-first-point start-point))
+         (point-list (split-root-point start-point))
          (next-point-list nil)
          (frame-count 0))
     (sdl2:with-init (:everything)
