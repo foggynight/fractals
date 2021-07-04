@@ -31,53 +31,65 @@
 
 ;;; CONFIG SECTION -------------------------------------------------------------
 
-;; Screen width and height
-(defparameter *screen-width* 1280)
-(defparameter *screen-height* 720)
+(defparameter *screen-width* 1280
+  "Screen width in pixels.")
+(defparameter *screen-height* 720
+  "Screen height in pixels.")
 
-;; Target frames per second to render
-(defparameter *target-fps* 144)
-;; Time to sleep between frames in milliseconds
-(defparameter *frame-delay-ms* (round (/ 1000 *target-fps*)))
-;; Time between updates in milliseconds
-(defparameter *update-delay-ms* 1000)
-;; Number of frames between updates
-(defparameter *update-delay-frame-count* (round (/ *update-delay-ms* *frame-delay-ms*)))
+(defparameter *target-fps* 144
+  "Target frames to render per second.")
+(defparameter *frame-delay-ms* (round (/ 1000 *target-fps*))
+  "Time to sleep between frames in milliseconds.")
+(defparameter *update-delay-ms* 1000
+  "Time between updates in milliseconds.")
+(defparameter *update-delay-frame-count* (round (/ *update-delay-ms* *frame-delay-ms*))
+  "Number of frames between updates.")
 
-;; Center points of the screen
-(defparameter *center-x* (floor (/ *screen-width* 2)))
-(defparameter *center-y* (floor (/ *screen-height* 2)))
+(defparameter *center-x* (floor (/ *screen-width* 2))
+  "x coordinate at the center of the screen.")
+(defparameter *center-y* (floor (/ *screen-height* 2))
+  "y coordinate at the center of the screen.")
 
-;; Colors used to draw the background and branches
-(defparameter *background-color* '(0 0 0 255))
-(defparameter *branch-color* '(255 0 0 255))
+(defparameter *background-color* '(0 0 0 255)
+  "Color used to draw the background.")
+(defparameter *branch-color* '(255 0 0 255)
+  "Color used to draw the branches.")
 
-;; Angle between a pair of split branches in radians
-(defparameter *split-angle* (/ pi 3))
-;; Number of branches to split each point into
-(defparameter *split-count* 2)
-;; Length of each branch -- Distance between start and end point
-(defparameter *branch-length* 100)
-;; Factor by which to shrink the branches per iteration
-(defparameter *branch-shrink-factor* 0.8)
+(defparameter *split-angle* (/ pi 3)
+  "Angle between a pair of split branches in radians.")
+(defparameter *split-count* 2
+  "Number of branches to split each point into.")
+(defparameter *branch-length* 100
+  "Length of each branch -- Distance between start and end point.")
+(defparameter *branch-shrink-factor* 0.8
+  "Factor by which to shrink the branches per iteration.")
 
 ;;; TREE-POINT SECTION ---------------------------------------------------------
 
-;; Tree-point class representing a point in the tree, each point has a parent
-;; point and some number of child points; branches are lines drawn between a
-;; parent and child point.
 (defclass tree-point ()
-  ((x :accessor x
-      :initarg :x)
-   (y :accessor y
-      :initarg :y)
-   (ancestor-count :accessor ancestor-count
-                   :initarg :ancestor-count)
-   (parent-angle :accessor parent-angle
-                 :initarg :parent-angle)))
+  ((x
+    :accessor x
+    :initarg :x
+    :documentation "x position of this tree-point.")
+   (y
+    :accessor y
+    :initarg :y
+    :documentation "y position of this tree-point.")
+   (ancestor-count
+    :accessor ancestor-count
+    :initarg :ancestor-count
+    :documentation "Number of ancestors of this tree-point.")
+   (parent-angle
+    :accessor parent-angle
+    :initarg :parent-angle
+    :documentation "Angle of the parent branch of this tree-point."))
+  (:documentation
+   "Tree-point class representing a point in the tree, each point has a parent
+point and some number of child points; branches are lines drawn between a parent
+and child point."))
 
-;; Split the root point into its child points.
 (defun split-root-point (start-point)
+  "Split the root point into its child points."
   (let ((point-list nil)
         (point nil)
         (angle 0)
@@ -96,8 +108,8 @@
       (setq point-list (cons point point-list)))
     point-list))
 
-;; Split a child point into its child points.
 (defun split-point (start-point)
+  "Split a child point into its child points."
   (let ((point-list nil)
         (point nil)
         (angle (- (parent-angle start-point)
@@ -121,18 +133,18 @@
 
 ;;; RENDER SECTION -------------------------------------------------------------
 
-;; Set the draw color of the renderer.
 (defun render-set-color (ren color)
+  "Set the draw color of the renderer."
   (apply #'sdl2:set-render-draw-color (cons ren color)))
 
-;; Fill the screen with the background color.
 (defun render-draw-background (ren)
+  "Fill the screen with the background color."
   (render-set-color ren *background-color*)
   (sdl2:render-clear ren))
 
-;; Draw a branch in the branch color using a line thats starts and ends at the
-;; given points.
 (defun render-draw-branch (ren start-point end-point)
+  "Draw a branch in the branch color using a line thats starts and ends at the
+given points."
   (render-set-color ren *branch-color*)
   (sdl2:render-draw-line ren
                          (floor (+ (x start-point) *center-x*))
@@ -140,8 +152,8 @@
                          (floor (+ (x end-point) *center-x*))
                          (floor (+ (y end-point) *center-y*))))
 
-;; Draw a list of branches using a starting point and list of end points.
 (defun render-draw-branch-list (ren start-point end-point-list)
+  "Draw a list of branches using a starting point and list of end points."
   (dolist (end-point end-point-list)
     (render-draw-branch ren start-point end-point)))
 
