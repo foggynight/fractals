@@ -1,5 +1,4 @@
-;;;
-;; --- fractal-tree.lisp ---
+;;; --- fractal-tree.lisp ---
 ;;
 ;; Construct a fractal tree by splitting each point into some number of branches
 ;; where a point is the end of a previous branch. Branches splay outwards from
@@ -25,7 +24,6 @@
 ;;
 ;; Copyright (C) 2021 Robert Coffey
 ;; Released under the GPLv2 license
-;;;
 
 (require :sdl2)
 
