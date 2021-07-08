@@ -19,8 +19,8 @@
 ;; Trees are drawn by drawing lines between points and their children, these
 ;; lines are referred to as branches.
 ;;
-;; The screen is centered on (0, 0), points components are measured relative to
-;; the center of the screen.
+;; The screen is centered on (0, 0), points are measured relative to the center
+;; of the screen.
 ;;
 ;; Copyright (C) 2021 Robert Coffey
 ;; Released under the GPLv2 license
