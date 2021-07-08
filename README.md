@@ -1,6 +1,13 @@
 # fractals
 
+## Description
+
 Simply drawing fractals.
+
+
+## Dependencies
+
+- SDL2
 
 
 ## License
